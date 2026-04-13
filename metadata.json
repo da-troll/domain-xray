@@ -1,13 +1,20 @@
 {
   "inspired_by": "retlehs/quien",
   "project_name": "Domain X-Ray",
-  "description": "Web-based domain intelligence dashboard — enter any domain, get WHOIS registration data, DNS records, TLS certificate health, SPF/DMARC email security posture, and HTTPS response metrics in a single parallel lookup.",
-  "tech_stack": ["React", "TypeScript", "Vite", "Tailwind CSS", "Python", "FastAPI"],
+  "description": "Web-based domain intelligence dashboard \u2014 enter any domain, get WHOIS registration data, DNS records, TLS certificate health, SPF/DMARC email security posture, and HTTPS response metrics in a single parallel lookup.",
+  "tech_stack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Tailwind CSS",
+    "Python",
+    "FastAPI"
+  ],
   "build_date": "2026-04-13",
   "build_time_hours": 1.5,
   "status": "complete",
   "features": [
-    "Parallel async lookups — WHOIS, DNS, TLS, email security, response timing all at once",
+    "Parallel async lookups \u2014 WHOIS, DNS, TLS, email security, response timing all at once",
     "WHOIS: registrar, creation/expiry dates, nameservers, status flags",
     "DNS records: A, AAAA, MX (with priority), NS, TXT, CNAME",
     "TLS: issuer, expiry countdown (color-coded), SANs list, protocol version",
@@ -16,5 +23,5 @@
     "Household domain shortcuts (trollefsen.com, clawdash, mvp, podda)"
   ],
   "live_url": "https://mvp.trollefsen.com/2026-04-13-domain-xray/",
-  "github_url": ""
+  "github_url": "https://github.com/da-troll/domain-xray"
 }
