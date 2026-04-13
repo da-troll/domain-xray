@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && mv dist out",
+    "build": "tsc -b && vite build && rm -rf out && mv dist out",
     "preview": "vite preview",
     "start": "python3.13 server.py"
   },
