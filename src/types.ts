@@ -6,6 +6,7 @@ export interface WhoisInfo {
   nameservers?: string[]
   status?: string[]
   registrant_country?: string
+  queried_domain?: string  // set when python-whois stripped a subdomain
   error?: string
 }
 
@@ -41,6 +42,7 @@ export interface SpfInfo {
   record?: string
   all_qualifier?: string
   includes?: string[]
+  note?: string  // shown for subdomains with no SPF
 }
 
 export interface DmarcInfo {
@@ -50,6 +52,7 @@ export interface DmarcInfo {
   subdomain_policy?: string
   pct?: string
   rua?: string
+  source_domain?: string  // set when RFC fallback to root domain was used
 }
 
 export interface EmailSecurity {

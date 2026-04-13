@@ -19,7 +19,12 @@ export function WhoisCard({ data }: { data: WhoisInfo }) {
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-      <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">WHOIS</h2>
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">WHOIS</h2>
+        {data.queried_domain && (
+          <span className="text-[10px] text-amber-500/80">for {data.queried_domain}</span>
+        )}
+      </div>
 
       {data.error ? (
         <p className="text-red-400 text-sm">{data.error}</p>

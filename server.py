@@ -40,6 +40,12 @@ def clean_domain(raw: str) -> str:
     return d.split("/")[0].split("?")[0].split("#")[0]
 
 
+def root_domain(domain: str) -> str:
+    """Return the registered domain (last two labels). podda.trollefsen.com → trollefsen.com"""
+    parts = domain.rstrip(".").split(".")
+    return ".".join(parts[-2:]) if len(parts) > 2 else domain
+
+
 async def get_whois(domain: str) -> dict:
     try:
         w = await asyncio.wait_for(
@@ -64,6 +70,12 @@ async def get_whois(domain: str) -> dict:
             status = [status]
         status = list(set(str(s).split()[0] for s in status))
 
+        # python-whois strips subdomains internally; surface which domain it queried
+        queried = getattr(w, "domain", None)
+        if isinstance(queried, list):
+            queried = queried[0] if queried else None
+        queried = str(queried).lower().strip() if queried else root_domain(domain)
+
         return {
             "registrar": str(w.registrar).strip() if w.registrar else None,
             "created": fmt_date(w.creation_date),
@@ -72,6 +84,7 @@ async def get_whois(domain: str) -> dict:
             "nameservers": ns[:8],
             "status": status[:6],
             "registrant_country": str(w.country).strip() if getattr(w, "country", None) else None,
+            "queried_domain": queried if queried != domain else None,
         }
     except asyncio.TimeoutError:
         return {"error": "WHOIS timed out"}
@@ -146,8 +159,13 @@ async def get_tls(domain: str) -> dict:
         return {"error": f"Cert verification failed: {getattr(e, 'reason', str(e))}"}
     except ConnectionRefusedError:
         return {"error": "Port 443 not reachable"}
+    except socket.gaierror:
+        return {"error": "Domain not found in DNS"}
     except Exception as e:
-        return {"error": str(e)[:120]}
+        msg = str(e)
+        if "Name or service not known" in msg or "nodename nor servname" in msg:
+            return {"error": "Domain not found in DNS"}
+        return {"error": msg[:120]}
 
 
 async def get_email_security(domain: str) -> dict:
@@ -165,24 +183,38 @@ async def get_email_security(domain: str) -> dict:
         except Exception:
             return []
 
-    txt_records, dmarc_records = await asyncio.gather(
+    root = root_domain(domain)
+    is_subdomain = root != domain
+
+    txt_records, dmarc_sub_records = await asyncio.gather(
         resolve_txt(domain),
         resolve_txt(f"_dmarc.{domain}"),
     )
 
-    # SPF
+    # SPF — lives on the sending domain; note if this is a subdomain
     spf_list = [r for r in txt_records if r.lower().startswith("v=spf1")]
     spf_record = spf_list[0] if spf_list else None
     spf: dict = {"exists": bool(spf_record), "record": spf_record}
+    if is_subdomain and not spf_record:
+        spf["note"] = f"No SPF on subdomain — check {root} for the root domain record"
     if spf_record:
         parts = spf_record.split()
-        spf["mechanisms"] = [p for p in parts[1:] if not p.startswith("~") and not p.startswith("-") and not p.startswith("+") or ":" in p or "/" in p]
         spf["all_qualifier"] = next((p for p in parts if p in ("~all", "-all", "+all", "?all")), None)
         spf["includes"] = [p.split(":", 1)[1] for p in parts if p.startswith("include:")]
 
-    # DMARC
-    dmarc_record = next((r for r in dmarc_records if r.upper().startswith("V=DMARC1")), None)
+    # DMARC — per RFC 7489 §6.6.3: check subdomain first, fall back to organisational domain
+    dmarc_record = next((r for r in dmarc_sub_records if r.upper().startswith("V=DMARC1")), None)
+    dmarc_source = domain
+
+    if not dmarc_record and is_subdomain:
+        root_dmarc_records = await resolve_txt(f"_dmarc.{root}")
+        dmarc_record = next((r for r in root_dmarc_records if r.upper().startswith("V=DMARC1")), None)
+        if dmarc_record:
+            dmarc_source = root  # fell back to root per RFC
+
     dmarc: dict = {"exists": bool(dmarc_record), "record": dmarc_record}
+    if is_subdomain:
+        dmarc["source_domain"] = dmarc_source
     if dmarc_record:
         tags = {}
         for part in dmarc_record.split(";"):
@@ -224,6 +256,11 @@ async def get_response(domain: str) -> dict:
             }
     except httpx.TimeoutException:
         return {"error": "Request timed out"}
+    except httpx.ConnectError as e:
+        msg = str(e)
+        if "Name or service not known" in msg or "nodename nor servname" in msg or "NXDOMAIN" in msg:
+            return {"error": "Domain not found in DNS"}
+        return {"error": msg[:120]}
     except Exception as e:
         return {"error": str(e)[:120]}
 

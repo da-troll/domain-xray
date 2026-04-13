@@ -38,6 +38,8 @@ export function EmailSecCard({ data }: { data: EmailSecurity }) {
               <div className="text-xs font-mono text-slate-400 bg-slate-800/50 rounded p-2 break-all leading-relaxed">
                 {spf.record}
               </div>
+            ) : spf?.note ? (
+              <p className="text-xs text-slate-500 italic">{spf.note}</p>
             ) : (
               <p className="text-xs text-red-400">No SPF record found</p>
             )}
@@ -54,9 +56,12 @@ export function EmailSecCard({ data }: { data: EmailSecurity }) {
 
           {/* DMARC */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <StatusDot ok={dmarc?.exists} />
               <span className="text-sm font-medium text-slate-200">DMARC</span>
+              {dmarc?.source_domain && (
+                <span className="text-[10px] text-amber-500/80">via {dmarc.source_domain}</span>
+              )}
               {dmarc?.policy && (
                 <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${policyColor(dmarc.policy)}`}>
                   p={dmarc.policy}
