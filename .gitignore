@@ -1,0 +1,23 @@
+node_modules
+dist
+out
+*.local
+
+# Environment variables
+.env
+.env.*
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.sw?
